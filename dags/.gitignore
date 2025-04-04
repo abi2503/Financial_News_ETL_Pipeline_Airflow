@@ -1,0 +1,27 @@
+# Airflow & Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+.env.*
+*.sqlite
+*.db
+.DS_Store
+
+# Astronomer-related
+.include/
+logs/
+.venv/
+.env
+*.log
+
+# Docker
+*.pid
+*.pid.lock
+docker-compose.override.yml
+
+# Jupyter
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
