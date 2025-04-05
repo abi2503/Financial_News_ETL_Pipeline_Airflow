@@ -361,18 +361,27 @@ def step5_dag():
             feed = feedparser.parse(url)
             logging.info(f"🌐 Google News returned {len(feed.entries)} entries for {ticker}")
             articles = []
+
             for entry in feed.entries:
-                text = get_full_article_text(entry.link)
-                articles.append({
-                    "article_id": entry.link,
-                    "ticker_symbol": ticker,
-                    "article_title": entry.title,
-                    "article_text": text,
-                    "published_date": to_date,
-                    "source": "Google News",
-                    "author": "N/A"
-                })
+                try:
+                    # Try to get the real article link from the source tag
+                    real_url = entry.get("source", {}).get("href", entry.link)
+
+                    text = get_full_article_text(real_url)
+                    articles.append({
+                        "article_id": real_url,
+                        "ticker_symbol": ticker,
+                        "article_title": entry.title,
+                        "article_text": text,
+                        "published_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                        "source": entry.get("source", {}).get("title", "Google News"),
+                        "author": "N/A"
+                    })
+                except Exception as e:
+                    logging.error(f"❌ Error processing Google News entry: {e}")
+
             return articles
+
         '''
         def from_google_news(ticker):
             url = f"https://news.google.com/rss/search?q={ticker}+stock+market"
@@ -402,13 +411,35 @@ def step5_dag():
 
             return articles
         '''
-
+        '''
         for ticker in tickers:
             all_articles.extend(from_newsapi(ticker, NEWSAPI_KEY))
             all_articles.extend(from_google_news(ticker))
 
         valid_articles = [a for a in all_articles if a["article_text"] != "Full content not available"]
         logging.info(f"📦 Total valid articles fetched: {len(valid_articles)}")
+        return valid_articles
+        '''
+        for ticker in tickers:
+            all_articles.extend(from_newsapi(ticker, NEWSAPI_KEY))
+            all_articles.extend(from_google_news(ticker))
+
+        # Deduplication logic based on article_id
+        unique_articles = {}
+        for article in all_articles:
+            article_id = article.get("article_id")
+            if article_id and article_id not in unique_articles:
+                unique_articles[article_id] = article
+            else:
+                logging.info(f"🧹 Duplicate found and skipped: {article_id}")
+
+        # Filter out articles without usable text
+        valid_articles = [
+            a for a in unique_articles.values()
+            if a["article_text"] and a["article_text"] != "Full content not available"
+        ]
+
+        logging.info(f"📦 Total unique & valid articles: {len(valid_articles)}")
         return valid_articles
 
     @task

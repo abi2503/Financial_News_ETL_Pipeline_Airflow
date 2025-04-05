@@ -23,4 +23,10 @@ lxml
 lxml_html_clean
 langchain_community
 
-
+# Web Scraping and Article Extraction
+newspaper3k
+feedparser
+beautifulsoup4
+lxml
+requests
+readability-lxml
